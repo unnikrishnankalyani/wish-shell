@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 typedef struct Path{
   char *pathname;
@@ -11,14 +12,20 @@ typedef struct Path{
 }Path;
 
 Path *paths;
+void pathinit(){
+    free(paths);
+    paths = (Path*)malloc(sizeof(Path));
+    paths->pathname = "/bin/";
+    paths->next = NULL;
+}
 
 void printerror(){
-    //printf("verify %s\n",command);
     char error_message[30] = "An error has occurred\n";
     write(STDERR_FILENO, error_message, strlen(error_message)); 
 }
 
 void checkinpath(char *command, char *string){
+    
     Path *temp = paths;
     
     while (temp){
@@ -33,19 +40,16 @@ void checkinpath(char *command, char *string){
                 fprintf(stderr, "fork failed\n");
                 exit(1);
             } else if (rc == 0) { // child (new process)
-                char *myargs[3];
-                myargs[0] = strdup(command); // program: "ls" d
-                
-                int i = 1;
+                char *filechecker = strdup(command);
+                char *myargs[10];
+                int i = 0;
                 while(command){
-                    command  = strsep(&string, " ");
                     // printf("command %s\n",command);
-                    if (command){
-                        if(*command!=0){
-                            myargs[i] = command; 
-                            i++;
-                        }
+                    if(*command!=0){
+                        myargs[i] = command; 
+                        i++;
                     }
+                    command  = strsep(&string, " ");
                 }
                 myargs[i] = NULL;
                 // for (i=0;myargs[i]!=NULL;i++){
@@ -63,6 +67,8 @@ void checkinpath(char *command, char *string){
 }
 
 void addtopath(char *string){
+    free(paths);
+    paths = NULL;
     char *command  = strsep(&string, " ");
     Path *temp;
     int init = 1;
@@ -71,8 +77,9 @@ void addtopath(char *string){
         Path *new = (Path*)malloc(sizeof(Path));
         command[strcspn(command, "\n")] = 0; //manage \n to avoid weird errors
         char *c = "/";
+        // printf("%s,%ld", command, strlen(command));
+        new->pathname = (char *)malloc(strlen(command)+2);
         
-        new->pathname = (char *)malloc(sizeof(command)+1);
         strcpy(new->pathname,command);
         strcat(new->pathname, c);
         new->next = NULL;
@@ -92,23 +99,51 @@ void addtopath(char *string){
 }
 
 void cd(char *string){
+    if(string == NULL){
+        printerror();
+        return;
+    }
     char *newdir  = strsep(&string, " ");
-    while(newdir){
+    while (*newdir==0){
         newdir  = strsep(&string, " ");
-        if (newdir){
-            if(*newdir!=0){
-                printerror();
-                return;
-            }
+        if(newdir==NULL){
+            printerror();
+            return;
         }
     }
-    chdir(newdir);
+    //handle multiple arguments
+    char *newdircpy = strsep(&string, " ");
+    while(newdircpy){
+        if(*newdircpy!=0){
+            printf("newdir not empty :%s",newdircpy);
+            printerror();
+            return;
+        }
+        newdircpy  = strsep(&string,  " ");
+    }
+    
+    //all good, change
+    int status = chdir(newdir);
+    if(status == -1){
+        printerror();
+    }
 }
 
 void process_command(char *buffer){
+    if (buffer==NULL){
+        return;
+    }
     buffer[strcspn(buffer, "\n")] = 0;
     char *string = strdup(buffer);
     char *command  = strsep(&string, " ");
+
+    while(*command==0){
+        command  = strsep(&string, " ");
+        if(command == NULL){
+            return;
+        }
+    }
+
     if(strcmp(command, "exit")==0 ){
         exit(0);
     }
@@ -143,6 +178,7 @@ void execute_file(char *file_){
 }
 
 int main(int argc, char *argv[]){
+    pathinit();
     char buffer[32];
     char *b = buffer;
     size_t bufsize = 32;
