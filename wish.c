@@ -22,15 +22,12 @@ void checkinpath(char *command, char *string){
     Path *temp = paths;
     
     while (temp){
-        printf("saved path - %s\n", temp->pathname);
         char *c = (char *)malloc(sizeof(temp->pathname));
         strcpy(c, temp->pathname);
         strcat(c, command);
         int x = access(c, X_OK);
-        printf("trying exec %s: %d\n", c,x);
         
         if(x ==0){
-            printf("invoking exec %s\n", c);
             int rc = fork();
             if (rc < 0) { // fork failed; exit
                 fprintf(stderr, "fork failed\n");
@@ -42,20 +39,18 @@ void checkinpath(char *command, char *string){
                 int i = 1;
                 while(command){
                     command  = strsep(&string, " ");
-                    printf("command %s\n",command);
+                    // printf("command %s\n",command);
                     if (command){
                         if(*command!=0){
                             myargs[i] = command; 
-                            size_t l = strlen(command);
-                            printf("command part: '%s', strlen: %ld\n",command,l);
                             i++;
                         }
                     }
                 }
                 myargs[i] = NULL;
-                for (i=0;myargs[i]!=NULL;i++){
-                    printf("myargs[i], %s\n", myargs[i]);
-                }
+                // for (i=0;myargs[i]!=NULL;i++){
+                //     printf("myargs[i], %s\n", myargs[i]);
+                // }
                 execv(c, myargs);
                 } else { // parent goes down this path (main)
                 wait(NULL);  
@@ -96,39 +91,18 @@ void addtopath(char *string){
     
 }
 
-void ls(char *string){
-    int rc = fork();
-    
-    if (rc < 0) { // fork failed; exit
-        fprintf(stderr, "fork failed\n");
-        exit(1);
-    } else if (rc == 0) { // child (new process)
-        char *myargs[3];
-        myargs[0] = strdup("ls"); // program: "ls" d
-        char *command  = "ls";
-        int i = 1;
-        while(command){
-            command  = strsep(&string, " ");
-            printf("command %s\n",command);
-            if (command){
-                if(*command!=0){
-                    myargs[i] = command; 
-                    size_t l = strlen(command);
-                    printf("command part: '%s', strlen: %ld\n",command,l);
-                    i++;
-                }
-                
+void cd(char *string){
+    char *newdir  = strsep(&string, " ");
+    while(newdir){
+        newdir  = strsep(&string, " ");
+        if (newdir){
+            if(*newdir!=0){
+                printerror();
+                return;
             }
-            
         }
-        myargs[i] = NULL;
-        for (i=0;myargs[i]!=NULL;i++){
-            printf("myargs[i], %s\n", myargs[i]);
-        }
-        execvp(myargs[0], myargs);
-        } else { // parent goes down this path (main)
-        wait(NULL);                   
-    }  
+    }
+    chdir(newdir);
 }
 
 void process_command(char *buffer){
@@ -138,9 +112,9 @@ void process_command(char *buffer){
     if(strcmp(command, "exit")==0 ){
         exit(0);
     }
-    // else if (strcmp(command, "ls")==0){
-    //     ls(string);
-    // }
+    else if (strcmp(command, "cd")==0){
+        cd(string);
+    }
     else if (strcmp(command, "path")==0){
         addtopath(string);
     }
