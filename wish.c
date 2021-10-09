@@ -152,12 +152,21 @@ void cd(char *string){
     }
 }
 
+char* replace_tabs_with_spaces(char* str){
+    char *current_pos = strchr(str,'\t');
+    while (current_pos) {
+        *current_pos = ' ';
+        current_pos = strchr(current_pos,'\t');
+    }
+    return str;
+}
+
 void process_command(char *buffer){
     if (buffer==NULL){
         return;
     }
     buffer[strcspn(buffer, "\n")] = 0;
-
+    buffer = replace_tabs_with_spaces(buffer);
     char *fileop = strdup(buffer);
 
     char *string = strsep(&fileop, ">");
@@ -169,8 +178,10 @@ void process_command(char *buffer){
     if(fileop!=NULL){
         failbuiltin = 1;
     }
+    string[strcspn(string, "\t")] = 0;
     char *command  = strsep(&string, " ");
-    
+    // printf("string com %s, %s\n",string, command);
+
     while(*command==0){
         command  = strsep(&string, " ");
         if(command == NULL){
@@ -232,13 +243,15 @@ int main(int argc, char *argv[]){
     size_t bufsize = 32;
     if (argc == 1){
         while(1){
-            printf("wish>");
+            printf("wish> ");
             getline(&b,&bufsize,stdin);
             
             process_command(buffer);
         }
-    } else {
+    } else if(argc ==2){
         execute_file(argv[1]);
+    }else{
+        exit(1);
     }
     
     return 0;
