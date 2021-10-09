@@ -24,9 +24,22 @@ void printerror(){
     write(STDERR_FILENO, error_message, strlen(error_message)); 
 }
 
-void checkinpath(char *command, char *string){
+void checkinpath(char *command, char *string, char *fileop){
     
     Path *temp = paths;
+
+    char *fileextract = NULL;
+    if (fileop){
+        fileextract  = strsep(&fileop, " ");
+        while(*fileextract==0){
+            fileextract  = strsep(&fileop, " ");
+            if(fileextract == NULL){
+                printerror();
+                return;
+            }
+        }
+    }
+    // printf("fileextract, %s\n", fileextract);
     
     while (temp){
         char *c = (char *)malloc(sizeof(temp->pathname));
@@ -36,11 +49,24 @@ void checkinpath(char *command, char *string){
         
         if(x ==0){
             int rc = fork();
-            if (rc < 0) { // fork failed; exit
-                fprintf(stderr, "fork failed\n");
+            if (rc < 0) { 
                 exit(1);
-            } else if (rc == 0) { // child (new process)
-                char *filechecker = strdup(command);
+            } else if (rc == 0) { 
+                if(fileextract){
+                    char *filecpy = strsep(&fileop, " ");
+                    while(filecpy){
+                        if(*filecpy!=0){
+                            // printf("mul files :%s",filecpy);
+                            printerror();
+                            return;
+                        }
+                        filecpy  = strsep(&fileop,  " ");
+                    }
+                    close(STDOUT_FILENO);
+                    open(fileextract, O_CREAT|O_WRONLY|O_TRUNC,S_IRWXU);
+                }
+                
+
                 char *myargs[10];
                 int i = 0;
                 while(command){
@@ -52,11 +78,8 @@ void checkinpath(char *command, char *string){
                     command  = strsep(&string, " ");
                 }
                 myargs[i] = NULL;
-                // for (i=0;myargs[i]!=NULL;i++){
-                //     printf("myargs[i], %s\n", myargs[i]);
-                // }
                 execv(c, myargs);
-                } else { // parent goes down this path (main)
+                } else { 
                 wait(NULL);  
                 return;                 
             }  
@@ -115,7 +138,7 @@ void cd(char *string){
     char *newdircpy = strsep(&string, " ");
     while(newdircpy){
         if(*newdircpy!=0){
-            printf("newdir not empty :%s",newdircpy);
+            // printf("newdir not empty :%s",newdircpy);
             printerror();
             return;
         }
@@ -134,9 +157,20 @@ void process_command(char *buffer){
         return;
     }
     buffer[strcspn(buffer, "\n")] = 0;
-    char *string = strdup(buffer);
-    char *command  = strsep(&string, " ");
 
+    char *fileop = strdup(buffer);
+
+    char *string = strsep(&fileop, ">");
+
+    // printf("string, %s\n", string);
+    // printf("opfile, %s\n", fileop);
+
+    int failbuiltin = 0;
+    if(fileop!=NULL){
+        failbuiltin = 1;
+    }
+    char *command  = strsep(&string, " ");
+    
     while(*command==0){
         command  = strsep(&string, " ");
         if(command == NULL){
@@ -145,16 +179,30 @@ void process_command(char *buffer){
     }
 
     if(strcmp(command, "exit")==0 ){
-        exit(0);
+        if(string!=NULL || failbuiltin){
+            printerror();
+        }else{
+            exit(0);
+        }
+        
     }
     else if (strcmp(command, "cd")==0){
-        cd(string);
+        if(failbuiltin){
+            printerror();
+        }else{
+            cd(string);
+        }
     }
     else if (strcmp(command, "path")==0){
-        addtopath(string);
+        if(failbuiltin){
+            printerror();
+        }else{
+            addtopath(string);
+        }
+        
     }
     else{
-        checkinpath(command, string);
+        checkinpath(command, string, fileop);
     }
 }
 
