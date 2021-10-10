@@ -24,7 +24,7 @@ void printerror(){
     write(STDERR_FILENO, error_message, strlen(error_message)); 
 }
 
-void checkinpath(char *command, char *string, char *fileop){
+void checkinpath(char *command, char *string, char *fileop, int isloopcnt, int loopcnt){
     
     Path *temp = paths;
 
@@ -76,6 +76,9 @@ void checkinpath(char *command, char *string, char *fileop){
                         i++;
                     }
                     command  = strsep(&string, " ");
+                }
+                if(isloopcnt){
+                    sprintf(myargs[i-1], "%d", loopcnt);
                 }
                 myargs[i] = NULL;
                 execv(c, myargs);
@@ -161,6 +164,13 @@ char* replace_tabs_with_spaces(char* str){
     return str;
 }
 
+void loop(char *command){
+    char *dollar = strrchr(command, '$');
+    if (dollar && !strcmp(dollar, "$loop")){
+        printf("dollar loopfound");
+    }
+}
+
 void process_command(char *buffer){
     if (buffer==NULL){
         return;
@@ -213,7 +223,57 @@ void process_command(char *buffer){
         
     }
     else{
-        checkinpath(command, string, fileop);
+        int isloopcnt = 0;
+        int cntloop = 1;
+
+        if (strcmp(command, "loop")==0){
+            
+            command  = strsep(&string, " ");
+            // printf("string com %s, %s\n",string, command);
+            if(command == NULL){
+                printf("no count\n");
+                printerror();
+                return;
+            }
+            while(*command==0){
+                command  = strsep(&string, " ");
+                if(command == NULL){
+                    printf("no count\n");
+                    printerror();
+                    return;
+                }
+            }
+            cntloop = atoi(command);
+            if (string){
+                char* loop_pos = strstr(string, "$loop");
+
+                if(loop_pos){
+                    isloopcnt = 1;
+                }
+            }
+            command  = strsep(&string, " ");
+            // printf("string com %s, %s\n",string, command);
+            if(command == NULL){
+                printf("no function\n");
+                printerror();
+                return;
+            }
+            while(*command==0){
+                command  = strsep(&string, " ");
+                if(command == NULL){
+                    printf("no function\n");
+                    printerror();
+                    return;
+                }
+            }
+            
+
+        }
+        int i;
+        for (i=1;i<=cntloop;i++){
+            checkinpath(command, string, fileop, isloopcnt, i);
+        }
+        
     }
 }
 
@@ -238,9 +298,9 @@ void execute_file(char *file_){
 
 int main(int argc, char *argv[]){
     pathinit();
-    char buffer[32];
+    char buffer[500];
     char *b = buffer;
-    size_t bufsize = 32;
+    size_t bufsize = 500;
     if (argc == 1){
         while(1){
             printf("wish> ");
