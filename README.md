@@ -12,22 +12,22 @@ path: The path command takes 0 or more arguments, with each argument separated b
 loop: This is a special built-in command! When you type:
 prompt> loop 10 somecommand
 the wish shell will run somecommand ten times.
-For example, if the user types echo hello as the command (to run the program /bin/echo , which just prints out whatever the arguments to it are), the shell should do this:
-prompt> loop 5 echo hello
-hello
-hello
-hello
-hello
-hello
-prompt>
-You can also specify a $loop variable. Thus, the user should then be able to do type:
-prompt> loop 5 echo hello $loop
-hello 1
-hello 2
-hello 3
-hello 4
-hello 5
-prompt>
+For example, if the user types echo hello as the command (to run the program /bin/echo , which just prints out whatever the arguments to it are), the shell should do this:  
+prompt> loop 5 echo hello  
+hello   
+hello  
+hello   
+hello  
+hello  
+prompt>  
+You can also specify a $loop variable. Thus, the user should then be able to do type:   
+prompt> loop 5 echo hello $loop 
+hello 1  
+hello 2 
+hello 3  
+hello 4  
+hello 5   
+prompt>  
 
-To run in batch mode, type:
+To run in batch mode, type:  
 ./wish filename
