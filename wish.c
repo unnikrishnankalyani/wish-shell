@@ -44,7 +44,17 @@ void checkinpath(char *command, char *string, char *fileop, int isloopcnt, int l
     while (temp){
         char *c = (char *)malloc(sizeof(temp->pathname));
         strcpy(c, temp->pathname);
-        strcat(c, command);
+        // printf("command %s\n", command);
+        if(strcmp(command,"$loop")==0 && isloopcnt){
+            char tmpvar[10];
+            sprintf(tmpvar, "%d", loopcnt); 
+            strcat(c, tmpvar);   
+            // printf("new command %s\n", tmpvar);
+        } else{
+            strcat(c, command);
+        }
+        
+        
         int x = access(c, X_OK);
         
         if(x ==0){
@@ -73,13 +83,14 @@ void checkinpath(char *command, char *string, char *fileop, int isloopcnt, int l
                     // printf("command %s\n",command);
                     if(*command!=0){
                         myargs[i] = command; 
+                        if(strcmp(myargs[i],"$loop")==0 && isloopcnt){
+                            sprintf(myargs[i], "%d", loopcnt);    
+                        } 
                         i++;
                     }
                     command  = strsep(&string, " ");
                 }
-                if(isloopcnt){
-                    sprintf(myargs[i-1], "%d", loopcnt);
-                }
+                
                 myargs[i] = NULL;
                 execv(c, myargs);
                 } else { 
