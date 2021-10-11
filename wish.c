@@ -164,13 +164,6 @@ char* replace_tabs_with_spaces(char* str){
     return str;
 }
 
-void loop(char *command){
-    char *dollar = strrchr(command, '$');
-    if (dollar && !strcmp(dollar, "$loop")){
-        printf("dollar loopfound");
-    }
-}
-
 void process_command(char *buffer){
     if (buffer==NULL){
         return;
@@ -195,6 +188,9 @@ void process_command(char *buffer){
     while(*command==0){
         command  = strsep(&string, " ");
         if(command == NULL){
+            if(fileop){
+                printerror();
+            }
             return;
         }
     }
@@ -231,19 +227,24 @@ void process_command(char *buffer){
             command  = strsep(&string, " ");
             // printf("string com %s, %s\n",string, command);
             if(command == NULL){
-                printf("no count\n");
+                // printf("no count\n");
                 printerror();
                 return;
             }
             while(*command==0){
                 command  = strsep(&string, " ");
                 if(command == NULL){
-                    printf("no count\n");
+                    // printf("no count\n");
                     printerror();
                     return;
                 }
             }
             cntloop = atoi(command);
+            // printf("cntloop : %d",cntloop);
+            if (cntloop <=0){
+                printerror();
+                return;
+            }
             if (string){
                 char* loop_pos = strstr(string, "$loop");
 
@@ -254,14 +255,14 @@ void process_command(char *buffer){
             command  = strsep(&string, " ");
             // printf("string com %s, %s\n",string, command);
             if(command == NULL){
-                printf("no function\n");
+                // printf("no function\n");
                 printerror();
                 return;
             }
             while(*command==0){
                 command  = strsep(&string, " ");
                 if(command == NULL){
-                    printf("no function\n");
+                    // printf("no function\n");
                     printerror();
                     return;
                 }
@@ -291,6 +292,7 @@ void execute_file(char *file_){
     fclose(fptr);
   }
   else{
+      printerror();
       exit(1);
   }
   return;
@@ -311,6 +313,7 @@ int main(int argc, char *argv[]){
     } else if(argc ==2){
         execute_file(argv[1]);
     }else{
+        printerror();
         exit(1);
     }
     
