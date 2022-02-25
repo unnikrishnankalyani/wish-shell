@@ -1,5 +1,4 @@
 # wish-shell
-This is shell: wish
 
 This shell supports the following built in commands.
 
